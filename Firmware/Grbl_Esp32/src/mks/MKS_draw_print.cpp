@@ -284,6 +284,16 @@ void mks_draw_print_popup(const char* text) {
 
     label_for_btn_name(btn_popup_cancle, print_src.print_Label_popup_sure, 50, 0, "Cancel");
     mks_lvgl_long_sroll_label_with_wight_set(print_src.print_stop_popup, print_src.print_Label_popup, 80, 60, text, 200);
+#ifdef SHOW_PRINTPOS
+   float* print_position = system_get_mpos();
+   char print_pos_str[50];
+
+	mpos_to_wpos(print_position);
+	
+	sprintf(print_pos_str, "At WX:%.1f WY:%.1f WZ:%.1f", print_position[0], print_position[1], print_position[2]);
+ 
+    mks_lvgl_long_sroll_label_with_wight_set(print_src.print_stop_popup, print_src.print_Label_popup_cancel, 80, 90, print_pos_str, 200);
+#endif   
 }
 
 void mks_draw_finsh_pupop(void) { 
