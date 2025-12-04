@@ -11,6 +11,7 @@ uint32_t ddxd;
 
 /* btn */
 static lv_obj_t* btn_popup_cancle;
+static lv_obj_t* btn_popup_soft;
 static lv_obj_t* btn_popup_sure;
 static lv_obj_t* btn_finsh_popup_sure;
 
@@ -47,7 +48,7 @@ static void event_handler_suspend(lv_obj_t* obj, lv_event_t event) {
         if(sys.state == State::Hold) {
             lv_imgbtn_set_src(print_src.print_imgbtn_suspend, LV_BTN_STATE_PR, &png_start_pre);
             lv_imgbtn_set_src(print_src.print_imgbtn_suspend, LV_BTN_STATE_REL, &png_start);
-            lv_label_set_static_text(print_src.print_Label_p_suspend, "Star");
+            lv_label_set_static_text(print_src.print_Label_p_suspend, "Pause");
             MKS_GRBL_CMD_SEND("~");
             if(print_setting._need_to_start_write) {
                 sys_rt_s_override = print_setting.cur_spindle_pwr;
@@ -56,7 +57,7 @@ static void event_handler_suspend(lv_obj_t* obj, lv_event_t event) {
         else if(sys.state == State::Cycle)    {
             lv_imgbtn_set_src(print_src.print_imgbtn_suspend, LV_BTN_STATE_PR, &png_pause_pre);
             lv_imgbtn_set_src(print_src.print_imgbtn_suspend, LV_BTN_STATE_REL, &png_pause);
-            lv_label_set_static_text(print_src.print_Label_p_suspend, "Pause");
+            lv_label_set_static_text(print_src.print_Label_p_suspend, "Start");
             MKS_GRBL_CMD_SEND("!");
             // spindle->stop();
         } 
@@ -65,6 +66,9 @@ static void event_handler_suspend(lv_obj_t* obj, lv_event_t event) {
 
 static void event_handler_stop(lv_obj_t* obj, lv_event_t event) {
     if (event == LV_EVENT_RELEASED) {
+        #ifdef SOFTSTOP
+            MKS_GRBL_CMD_SEND("!");
+        #endif
         mks_draw_print_popup("Do you want to stop print?");
     }
 }
@@ -142,11 +146,15 @@ void mks_draw_print(void) {
     print_src.print_Label_p_stop = label_for_imgbtn_name_mid(mks_global.mks_src, print_src.print_Label_p_stop, print_src.print_imgbtn_stop ,-40 ,0 ,"Stop");
     print_src.print_Label_p_adj = label_for_imgbtn_name_mid(mks_global.mks_src, print_src.print_Label_p_adj, print_src.print_imgbtn_adj ,-20 ,0 ,"Adjustment");
     
-
-
+#ifdef SHOW_PRINTPOS
+    print_src.print_Label_power = label_for_text(mks_global.mks_src, print_src.print_Label_power, NULL, 194, 161, LV_ALIGN_IN_TOP_LEFT, "X:");  // 输出功率
+    print_src.print_Label_caveSpeed =  label_for_text(mks_global.mks_src, print_src.print_Label_caveSpeed, NULL, 39, 161, LV_ALIGN_IN_TOP_LEFT, "Y:");    // 雕刻速度
+    print_src.print_Label_caveR =  label_for_text(mks_global.mks_src, print_src.print_Label_caveR, NULL, 356, 161, LV_ALIGN_IN_TOP_LEFT, "Z:");  
+ #else
     print_src.print_Label_power = label_for_text(mks_global.mks_src, print_src.print_Label_power, NULL, 194, 161, LV_ALIGN_IN_TOP_LEFT, "S:0%");  // 输出功率
     print_src.print_Label_caveSpeed =  label_for_text(mks_global.mks_src, print_src.print_Label_caveSpeed, NULL, 39, 161, LV_ALIGN_IN_TOP_LEFT, "F:0%");    // 雕刻速度
     print_src.print_Label_caveR =  label_for_text(mks_global.mks_src, print_src.print_Label_caveR, NULL, 356, 161, LV_ALIGN_IN_TOP_LEFT, "R:0%");  
+#endif
 
     Label_print_file_name = label_for_text(mks_global.mks_src, Label_print_file_name, NULL, 30, 6, LV_ALIGN_IN_TOP_LEFT, print_file_name);
     lv_label_set_style(Label_print_file_name, LV_LABEL_STYLE_MAIN, &print_src.print_file_name_style);
@@ -160,13 +168,40 @@ void mks_draw_print(void) {
 
 static void event_btn_cancle(lv_obj_t* obj, lv_event_t event) {
     if (event == LV_EVENT_RELEASED) {
-        
+        #ifdef SOFTSTOP
+            MKS_GRBL_CMD_SEND("~"); // just continue like after pause
+        #endif
         lv_obj_set_click(print_src.print_imgbtn_suspend, true);
         lv_obj_set_click(print_src.print_imgbtn_stop, true);
         lv_obj_set_click(print_src.print_imgbtn_adj, true);
         // lv_obj_set_click(print_src.print_imgbtn_pwr, true);
         // lv_obj_set_click(print_src.print_imgbtn_speed, true);
         lv_obj_del(print_src.print_stop_popup);
+    }
+}
+
+// new soft stop
+static void event_btn_soft(lv_obj_t* obj, lv_event_t event) {
+    uint16_t buf_cmd[]={0x18};
+    if (event == LV_EVENT_RELEASED) {
+        lv_obj_set_click(print_src.print_imgbtn_suspend, true);
+        lv_obj_set_click(print_src.print_imgbtn_stop, true);
+        lv_obj_set_click(print_src.print_imgbtn_adj, true);
+        // lv_obj_set_click(print_src.print_imgbtn_pwr, true);
+        // lv_obj_set_click(print_src.print_imgbtn_speed, true);
+        closeFile(); // end SD card read
+        mks_ui_page.mks_ui_page = MKS_UI_PAGE_LOADING;
+        mks_ui_page.wait_count = 1;
+        mks_clear_print();
+        MKS_GRBL_CMD_SEND("M3 S0\nM5\n"); // stop tool
+        #ifndef SOFTSTOP
+            MKS_GRBL_CMD_SEND("G90X0Y0F800\n");
+            MKS_GRBL_CMD_SEND(buf_cmd); // send CTRL-X for soft reset
+        #else
+            client_reset_read_buffer(CLIENT_ALL); // clear any pending commands
+            MKS_GRBL_CMD_SEND("~"); // continue to idle from here, work coordinates preserved
+        #endif
+        mks_draw_ready();
     }
 }
 
@@ -183,8 +218,10 @@ static void event_btn_sure(lv_obj_t* obj, lv_event_t event) {
         mks_ui_page.wait_count = 1;
         mks_clear_print();
         MKS_GRBL_CMD_SEND("M3 S0\n");
-        MKS_GRBL_CMD_SEND("G90X0Y0F800\n");
-        MKS_GRBL_CMD_SEND(buf_cmd);
+        #ifndef SOFTSTOP
+            MKS_GRBL_CMD_SEND("G90X0Y0F800\n");
+         #endif
+        MKS_GRBL_CMD_SEND(buf_cmd); // send CTRL-X for soft reset
         mks_draw_ready();
     }
 }
@@ -229,11 +266,17 @@ void mks_draw_print_popup(const char* text) {
     print_src.print_popup_btn_style.text.color = LV_COLOR_WHITE;
     print_src.print_popup_btn_style.body.radius = 10; 
 
-    btn_popup_sure = mks_lv_btn_set(print_src.print_stop_popup, btn_popup_sure, 100,40,20,130,event_btn_sure);
+    btn_popup_soft = mks_lv_btn_set(print_src.print_stop_popup, btn_popup_soft, 100,40,20,130,event_btn_soft);
+	lv_btn_set_style(btn_popup_soft, LV_BTN_STYLE_REL, &print_src.print_popup_btn_style);
+    lv_btn_set_style(btn_popup_soft,LV_BTN_STYLE_PR,&print_src.print_popup_btn_style);
+
+    label_for_btn_name(btn_popup_soft, print_src.print_Label_popup_sure, 30, 0, "Soft");
+
+    btn_popup_sure = mks_lv_btn_set(print_src.print_stop_popup, btn_popup_sure, 100,40,125,130,event_btn_sure);
 	lv_btn_set_style(btn_popup_sure, LV_BTN_STYLE_REL, &print_src.print_popup_btn_style);
     lv_btn_set_style(btn_popup_sure,LV_BTN_STYLE_PR,&print_src.print_popup_btn_style);
 
-    label_for_btn_name(btn_popup_sure, print_src.print_Label_popup_sure, 30, 0, "Yes");
+    label_for_btn_name(btn_popup_sure, print_src.print_Label_popup_sure, 30, 0, "Hard");
 
 	btn_popup_cancle = mks_lv_btn_set(print_src.print_stop_popup, btn_popup_cancle, 100,40,230,130,event_btn_cancle);
 	lv_btn_set_style(btn_popup_cancle, LV_BTN_STYLE_REL, &print_src.print_popup_btn_style);
@@ -1026,17 +1069,23 @@ void set_print_click(bool status) {
     lv_obj_set_click(print_src.print_imgbtn_adj , status);
 }
 
-
-char pl_info[128];
+////char pl_info[128]; // not used?
 void mks_print_data_updata(void) {
+#ifdef SHOW_PRINTPOS // Alternative position update
+    float* print_position = system_get_mpos();
 
+	mpos_to_wpos(print_position);
+	
+	sprintf(print_data_updata.print_pwr_str, "X:%.1f", print_position[0]);
+    sprintf(print_data_updata.print_speed_str, "Y:%.1f", print_position[1]);
+    sprintf(print_data_updata.print_rapid_str, "Z:%.1f", print_position[2]);
+#else
     sprintf(print_data_updata.print_pwr_str, "S:%d%%", sys_rt_s_override);
-    print_src.print_Label_power = mks_lv_label_updata(print_src.print_Label_power, print_data_updata.print_pwr_str);
-
     sprintf(print_data_updata.print_speed_str, "F:%2d%%", sys_rt_f_override);  
-    print_src.print_Label_caveSpeed = mks_lv_label_updata(print_src.print_Label_caveSpeed, print_data_updata.print_speed_str);
-
     sprintf(print_data_updata.print_rapid_str, "R:%2d%%", sys_rt_r_override);
+#endif
+    print_src.print_Label_power = mks_lv_label_updata(print_src.print_Label_power, print_data_updata.print_pwr_str);
+    print_src.print_Label_caveSpeed = mks_lv_label_updata(print_src.print_Label_caveSpeed, print_data_updata.print_speed_str);
     print_src.print_Label_caveR = mks_lv_label_updata(print_src.print_Label_caveR, print_data_updata.print_rapid_str);
 
     if (SD_ready_next == false) {

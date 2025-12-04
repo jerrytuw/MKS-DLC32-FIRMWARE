@@ -1,7 +1,21 @@
 # MKS-DLC32-FIRMWARE
 The source code of MKS DLC32.
 
-## 🔧 Fork Improvements
+## 🔧 This Fork Improvements
+- ( Verified the PWM spindle now respects the standard GRBL `$32` (Laser Mode) setting )
+- Added consolidated changes proposed by @kpatel122
+    - Fixed language bug that shows 'Text' for all labels. Added English co… 355e245
+    - Removed set_language_btn_style which was causing issues 9d173ca
+    - Update Grbl.cpp 48a55c6
+- Changed texts from "Knife" to "Probe"
+- Added SOFTSTOP and SHOW_PRINTPOS options
+    - SOFTSTOP adds button to STOP popup for soft stop, without losing work position
+    - SHOW_PRINTPOS shows work coordinates instead of overrides during SD card print
+- Changed icons for XY and Z Clear (just to test)
+- Activated touch beep
+
+
+## 🔧 Fork Improvements from https://github.com/barnstorm/MKS-DLC32-FIRMWARE
 
 This fork adds the following enhancements to the original MKS DLC32 firmware:
 

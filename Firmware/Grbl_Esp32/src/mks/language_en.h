@@ -18,7 +18,7 @@
 /* 控制界面 */
 #define XY_CLEAR_EN             "XY_Clear"
 #define Z_CLEAR_EN              "Z_Clear"
-#define KNIFE_EN                "Knife"
+#define KNIFE_EN                "Probe"
 #define NEXT_EN                 "Next"
 #define UP_EN                   "Up"
 #define COOLING_EN              "Cooling"

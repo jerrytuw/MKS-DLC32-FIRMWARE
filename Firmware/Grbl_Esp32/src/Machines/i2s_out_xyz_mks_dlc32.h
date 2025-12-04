@@ -28,7 +28,7 @@
 
 #define USR_Z_MOTOR
 
-// #define USE_BEEP
+#define USE_BEEP
 
 // #define USE_BL_TOUCH
 

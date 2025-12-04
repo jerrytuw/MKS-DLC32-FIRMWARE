@@ -78,7 +78,7 @@ static uint8_t get_event(lv_obj_t* obj) {
  *	2------de
  *	3...
 */
-static void set_language(uint8_t language) {
+void set_language(uint8_t language) {
 
 	switch(language) {
 

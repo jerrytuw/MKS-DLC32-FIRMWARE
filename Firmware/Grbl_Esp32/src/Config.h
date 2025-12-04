@@ -587,6 +587,15 @@ const double PARKING_PULLOUT_INCREMENT = 5.0;    // Spindle pull-out and plunge 
 // to ensure the laser doesn't inadvertently remain powered while at a stop and cause a fire.
 #define DISABLE_LASER_DURING_HOLD  // Default enabled. Comment to disable.
 
+// This option if SOFTSTOP is defined will issue a hold command upon pressing of the STOP button before showing
+// the YES/CANCEL popup. YES will finish as usual but without G90X0Y0 before CTRL-X, CANCEL
+// will send a RESUME command before exiting the popup. This should prevent machine position loss for STOP!
+// If the need to STOP is expected, machine coordinates should be same as work coordinates! 
+#define SOFTSTOP  // Default disabled. Comment to disable.
+
+// This option if SHOW_PRINTPOS is defined will show work coordinates instead of ovverrides during SD print. 
+#define SHOW_PRINTPOS // Default disabled. Comment to disable.
+
 // Enables a piecewise linear model of the spindle PWM/speed output. Requires a solution by the
 // 'fit_nonlinear_spindle.py' script in the /doc/script folder of the repo. See file comments
 // on how to gather spindle data and run the script to generate a solution.
