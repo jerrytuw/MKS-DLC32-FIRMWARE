@@ -1,5 +1,5 @@
 # MKS-DLC32-FIRMWARE
-The source code of MKS DLC32.
+The source code of MKS DLC32. I run this fork on a TTC450 CNC.
 
 ## 🔧 This Fork Improvements
 - ( Verified the PWM spindle now respects the standard GRBL `$32` (Laser Mode) setting )
@@ -13,6 +13,7 @@ The source code of MKS DLC32.
     - SHOW_PRINTPOS shows work coordinates instead of overrides during SD card print and also during STOP popup (for recovery in case of hard stop)
 - Changed icons for XY and Z Clear (just to test)
 - Activated touch beep
+- Added longpress move
 
 
 ## 🔧 Fork Improvements from https://github.com/barnstorm/MKS-DLC32-FIRMWARE
